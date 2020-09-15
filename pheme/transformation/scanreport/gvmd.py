@@ -18,11 +18,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from typing import Dict, List
 import logging
+import io
+import urllib
+import base64
 
 import pandas as pd
 from pandas import DataFrame
 from pandas.core.groupby.generic import DataFrameGroupBy
 import numpy as np
+
+import matplotlib.pyplot as plt
+
 
 from pheme.transformation.scanreport.model import (
     CVSSDistributionCount,
@@ -71,10 +77,22 @@ def __create_host_top_ten(result_series_df: DataFrame) -> CountGraph:
     if threat is None:
         return None
 
+    result_series_df.get(['host.text', 'host.hostname']).value_counts().head(
+        10
+    ).plot.barh(1)
+    fig = plt.gcf()
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png')
+    buf.seek(0)
+    string = base64.b64encode(buf.read())
+
+    uri = 'data:image/png;base64,' + urllib.parse.quote(string)
+    plt.clf()
+
     counted = threat.value_counts()
     return CountGraph(
         name="host_top_ten",
-        chart=None,
+        chart=uri,
         counts=[
             HostCount(ip=k[0], amount=v, name=k[1] if len(k) > 1 else None)
             for k, v in counted.head(10).to_dict().items()
