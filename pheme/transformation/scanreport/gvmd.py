@@ -57,9 +57,20 @@ def __create_nvt_top_ten(
         threat = group_by_threat.get_group(threat_level)
         threat_nvts = threat[['nvt.oid', 'nvt.name']]
         counted = threat_nvts.value_counts()
+
+        counted.head(10).plot.barh()
+        fig = plt.gcf()
+        buf = io.BytesIO()
+        fig.savefig(buf, format='png')
+        buf.seek(0)
+        base64_fig = base64.b64encode(buf.read())
+
+        uri = 'data:image/png;base64,' + urllib.parse.quote(base64_fig)
+        plt.clf()
+
         return CountGraph(
             name=threat_level,
-            chart=None,
+            chart=uri,
             counts=[
                 NVTCount(oid=k[0], amount=v, name=k[1])
                 for k, v in counted.head(10).to_dict().items()
